@@ -13,7 +13,7 @@ pipeline {
 
       stage("Checkout from SCM"){
               steps {
-              git branch: 'main', credentialsId: 'github', url: 'git@github.com:Nandan365/Devops'
+              git branch: 'main', credentialsId: 'github', url: 'https://github.com/Nandan365/Devops'
               }
       }
 
