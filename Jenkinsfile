@@ -34,16 +34,24 @@ pipeline {
             }
         }
 
-        stage("Login to AWS ECR") {
-            steps {
+       stage('Login to AWS ECR'){
+             steps {
                 script {
-                    sh """
-                    aws ecr get-login-password --region ${AWS_REGION} \
-                    | docker login --username AWS --password-stdin ${ECR_REPO}
-                    """
+                      withCredentials([
+                        string(credentialsId: 'AWS_Access_Token', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'AWS_Secret', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]){
+                    
+                    sh '''
+                        echo "Logging into AWS ECR..."
+                        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/t2k2p9u0
+                    '''
                 }
             }
+
         }
+    }
+
 
         stage("Build Docker Image") {
             steps {
