@@ -5,9 +5,13 @@ pipeline {
         maven 'Maven3'
     }
     environment {
-        AWS_REGION = "us-east-1"
-        ECR_REPO = "660376548872.dkr.ecr.us-east-1.amazonaws.com/devopsnandan"
-        IMAGE_TAG = "latest"
+        GIT_REPO = 'https://github.com/Nandan365/Devops.git'
+        AWS_REGION = 'us-east-1'
+        ECR_REPO_NAME = 'devopsnandan'
+        ECR_PUBLIC_REPO_URI = '660376548872.dkr.ecr.us-east-1.amazonaws.com/devopsnandan'
+        IMAGE_TAG = "${BUILD_NUMBER}"//'latest'
+        AWS_ACCOUNT_ID = '660376548872' 
+        IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
     }
     stages {
         stage("Cleanup Workspace") {
@@ -33,16 +37,24 @@ pipeline {
                 sh "mvn test"
             }
         }
-        stage("Login to AWS ECR") {
-    steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-            sh """
-            aws ecr get-login-password --region ${AWS_REGION} \
-            | docker login --username AWS --password-stdin ${ECR_REPO}
-            """
+
+       stage('Login to AWS ECR'){
+             steps {
+                script {
+                      withCredentials([
+                        string(credentialsId: 'AWS_Access_Token', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'AWS_Secret', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]){
+                    
+                    sh '''
+                        echo "Logging into AWS ECR..."
+                        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/t2k2p9u0
+                    '''
+                }
+            }
+
         }
     }
-}
 
 
         stage("Build Docker Image") {
