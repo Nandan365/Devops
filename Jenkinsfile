@@ -39,14 +39,6 @@ pipeline {
             }
         }
 
-        stage('Verify AWS Credentials') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                    sh "aws sts get-caller-identity --region ${AWS_REGION}"
-                }
-            }
-        }
-
         stage('Login to AWS ECR') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
