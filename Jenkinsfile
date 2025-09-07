@@ -12,23 +12,23 @@ pipeline{
         IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
     }
     
-  stages{
-        stage('Install_AWS_CLI'){
-            steps{
-		sh 'whoami'
-                  sh '''
-		        set -e
-                        echo "Installing AWS CLI..."
-                        apt update && apt install -y unzip curl
+stage("Install_AWS_CLI") {
+    steps {
+        sh '''
+            whoami
+            set -e
+            echo "Installing AWS CLI..."
+            sudo apt update -y
+            sudo apt install -y unzip curl
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            rm -rf aws
+            unzip -q awscliv2.zip
+            sudo ./aws/install --update
+            aws --version
+        '''
+    }
+}
 
-                        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                        rm -rf aws
-                        unzip -q awscliv2.zip
-                        ./aws/install --update
-                        aws --version
-                    '''
-            }
-        }
         
         stage('Configure AWS Credentials'){
             steps{
