@@ -1,69 +1,48 @@
 pipeline {
-    agent { label 'Agent' }
+    agent any
+
     tools {
+        maven 'Maven'
         jdk 'Java17'
-        maven 'Maven3'
     }
+
     environment {
-        GIT_REPO = 'https://github.com/Nandan365/Devops.git'
-        AWS_REGION = 'us-east-1'
-        ECR_REPO_NAME = 'devopsnandan'
-        ECR_REPO_URI = "660376548872.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        AWS_ACCOUNT_ID = '660376548872' 
-        IMAGE_URI = "${ECR_REPO_URI}:${IMAGE_TAG}"
-        PATH = "/usr/local/bin:${PATH}" // ensure aws cli is found
+        SONARQUBE = credentials('sonar-token')  // Create this in Jenkins Credentials
     }
+
     stages {
-        stage("Cleanup Workspace") {
+        stage('Checkout') {
             steps {
-                cleanWs()
+                git branch: 'main',
+                    url: 'https://github.com/Nandan365/Devops.git',
+                    credentialsId: 'github'
             }
         }
 
-        stage("Checkout from SCM") {
+        stage('Build') {
             steps {
-                git branch: 'main', credentialsId: 'github', url: "${GIT_REPO}"
+                sh 'mvn clean package'
             }
         }
 
-        stage("Build Application") {
+        stage('SonarQube Analysis') {
             steps {
-                sh "mvn clean package"
-            }
-        }
-
-        stage("Test Application") {
-            steps {
-                sh "mvn test"
-            }
-        }
-
-        stage('Login to AWS ECR') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                withSonarQubeEnv('MySonarQubeServer') {
                     sh """
-                        echo "Logging into AWS ECR..."
-                        aws ecr get-login-password --region ${AWS_REGION} \
-                        | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    mvn sonar:sonar \
+                      -Dsonar.projectKey=devops-demo \
+                      -Dsonar.host.url=http://<your-sonar-ip>:9000 \
+                      -Dsonar.login=$SONARQUBE
                     """
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Build & Push') {
             steps {
                 sh """
-                    docker build -t ${ECR_REPO_NAME}:latest .
-                    docker tag ${ECR_REPO_NAME}:latest ${IMAGE_URI}
-                """
-            }
-        }
-
-        stage('Push Image to ECR') {
-            steps {
-                sh """
-                    docker push ${IMAGE_URI}
+                docker build -t <ecr_repo>:latest .
+                docker push <ecr_repo>:latest
                 """
             }
         }
