@@ -8,11 +8,11 @@ pipeline {
         GIT_REPO = 'https://github.com/Nandan365/Devops.git'
         AWS_REGION = 'us-east-1'
         ECR_REPO_NAME = 'devopsnandan'
-        ECR_PUBLIC_REPO_URI = '660376548872.dkr.ecr.us-east-1.amazonaws.com/devopsnandan'
-        IMAGE_TAG = "${BUILD_NUMBER}"//'latest'
+        ECR_REPO_URI = "660376548872.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+        IMAGE_TAG = "${BUILD_NUMBER}"
         AWS_ACCOUNT_ID = '660376548872' 
-        IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
-	PATH = "/usr/local/bin:${PATH}"
+        IMAGE_URI = "${ECR_REPO_URI}:${IMAGE_TAG}"
+        PATH = "/usr/local/bin:${PATH}" // ensure aws cli is found
     }
     stages {
         stage("Cleanup Workspace") {
@@ -23,7 +23,7 @@ pipeline {
 
         stage("Checkout from SCM") {
             steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/Nandan365/Devops.git'
+                git branch: 'main', credentialsId: 'github', url: "${GIT_REPO}"
             }
         }
 
@@ -38,31 +38,32 @@ pipeline {
                 sh "mvn test"
             }
         }
-	stage('Verify AWS Credentials') {
-    	steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-            sh 'aws sts get-caller-identity --region us-east-1'
+
+        stage('Verify AWS Credentials') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    sh "aws sts get-caller-identity --region ${AWS_REGION}"
+                }
+            }
         }
-    }
-}
 
         stage('Login to AWS ECR') {
             steps {
-                script {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     sh """
                         echo "Logging into AWS ECR..."
-                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} \
-                        | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                        | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                     """
                 }
             }
-    
+        }
 
         stage('Build Docker Image') {
             steps {
                 sh """
-                    docker build -t ${devopsnandan}:latest .
-                    docker tag ${devopsnandan}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO}:latest
+                    docker build -t ${ECR_REPO_NAME}:latest .
+                    docker tag ${ECR_REPO_NAME}:latest ${IMAGE_URI}
                 """
             }
         }
@@ -70,11 +71,9 @@ pipeline {
         stage('Push Image to ECR') {
             steps {
                 sh """
-                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO}:latest
+                    docker push ${IMAGE_URI}
                 """
             }
         }
     }
- }
-    
 }
