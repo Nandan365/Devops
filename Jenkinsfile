@@ -37,15 +37,15 @@ pipeline {
           stage('Configure AWS Credentials'){
             steps{
                 script{
-                    withCredentials([string(credentialsId: 'AWS_Access_Token', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'AWS_Secret', variable: 'AWS_SECRET_ACCESS_KEY')]){
+                    withCredentials([string(credentialsId: 'AWS_Access_Token', variable: 'Access Key ID'),
+                        string(credentialsId: 'AWS_Secret', variable: 'Secret Access Key')]){
                                                    sh '''
                         mkdir -p ~/.aws
                         echo "[default]" | sudo tee ~/.aws/credentials > /dev/null
-                        echo "aws_access_key_id=\${AWS_ACCESS_KEY_ID}"
-                        echo "aws_secret_access_key=\${AWS_SECRET_ACCESS_KEY}"
-                            echo "aws_access_key_id=\${AWS_ACCESS_KEY_ID}" | sudo tee -a ~/.aws/credentials > /dev/null
-                            echo "aws_secret_access_key=\${AWS_SECRET_ACCESS_KEY}" | sudo tee -a ~/.aws/credentials > /dev/null
+                        echo "aws_access_key_id=\${Access Key ID}"
+                        echo "aws_secret_access_key=\${Secret Access Key}"
+                            echo "aws_access_key_id=\${Access Key ID}" | sudo tee -a ~/.aws/credentials > /dev/null
+                            echo "aws_secret_access_key=\${Secret Access Key}" | sudo tee -a ~/.aws/credentials > /dev/null
                             
                             # Set correct permissions for the credentials file (only owner can read/write)
                             sudo chmod 600 ~/.aws/credentials
@@ -110,8 +110,8 @@ pipeline {
              steps {
                 script {
                       withCredentials([
-                        string(credentialsId: 'AWS_Access_Token', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'AWS_Secret', variable: 'AWS_SECRET_ACCESS_KEY')
+                        string(credentialsId: 'AWS_Access_Token', variable: 'Access Key ID'),
+                        string(credentialsId: 'AWS_Secret', variable: 'Secret Access Key')
                     ]){
                     
                     sh '''
