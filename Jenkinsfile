@@ -34,7 +34,7 @@ pipeline {
 
         stage('Configure AWS Credentials') {
             steps {
-                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     sh 'aws sts get-caller-identity'
                 }
             }
@@ -63,8 +63,8 @@ pipeline {
             steps {
                 script {
                     echo "Deploying application to Tomcat. URL: ${TOMCAT_URL}, Path: ${TOMCAT_PATH}"
-                    sh ''' pwd '''
-                    sh ''' whoami '''
+                    sh 'pwd'
+                    sh 'whoami'
                     deploy adapters: [tomcat9(
                         credentialsId: TOMCAT_CREDENTIALS,
                         path: '',
@@ -89,11 +89,11 @@ pipeline {
 
         stage('Login to AWS ECR') {
             steps {
-                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     sh '''
                         echo "Logging into AWS ECR..."
-                        aws ecr-public get-login-password --region us-east-1 \
-                          | docker login --username AWS --password-stdin public.ecr.aws/g5s3z7y8
+                        aws ecr get-login-password --region us-east-1 \
+                          | docker login --username AWS --password-stdin 660376548872.dkr.ecr.us-east-1.amazonaws.com
                     '''
                 }
             }
