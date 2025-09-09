@@ -11,8 +11,8 @@ pipeline {
         TOMCAT_CREDENTIALS = 'tomcat-manager-creds'
         TOMCAT_URL = 'http://localhost:8080' // Change this to your Tomcat server's URL and port
         TOMCAT_PATH = '/usr/share/apache-tomcat' // Root context. Use '/yourapp' for a sub-path.
-        ECR_REPO_NAME = 'nandu'
-        ECR_PUBLIC_REPO_URI = '660376548872.dkr.ecr.us-east-1.amazonaws.com/nandu'
+        ECR_REPO_NAME = 'nandan'
+        ECR_PUBLIC_REPO_URI = 'public.ecr.aws/s5h4m1m8/nandan'
         IMAGE_TAG = "${BUILD_NUMBER}"
         IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
     }
@@ -116,7 +116,7 @@ pipeline {
                     
                     sh '''
                         echo "Logging into AWS ECR..."
-                        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/g5s3z7y8
+                        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/s5h4m1m8/nandan
                     '''
                 }
             }
