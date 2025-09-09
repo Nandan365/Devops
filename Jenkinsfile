@@ -7,10 +7,9 @@ pipeline {
 
     environment {
         GIT_REPO = 'https://github.com/Nandan365/Devops.git'
-        // Add environment variables for Tomcat credentials and URL
         TOMCAT_CREDENTIALS = 'tomcat-manager-creds'
-        TOMCAT_URL = 'http://localhost:8080' // Change this to your Tomcat server's URL and port
-        TOMCAT_PATH = '/usr/share/apache-tomcat' // Root context. Use '/yourapp' for a sub-path.
+        TOMCAT_URL = 'http://localhost:8080'
+        TOMCAT_PATH = '/usr/share/apache-tomcat'
         ECR_REPO_NAME = 'nandu'
         ECR_PUBLIC_REPO_URI = '660376548872.dkr.ecr.us-east-1.amazonaws.com/nandu'
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -18,49 +17,32 @@ pipeline {
     }
 
     stages {
-         stage('Install_AWS_CLI'){
-            steps{
-                  sh '''
-                        set -e
-                        echo "Installing AWS CLI..."
-                        echo "abc" | sudo -S apt update && sudo -S apt install -y unzip curl
-
-                        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                        rm -rf aws
-                        unzip -q awscliv2.zip
-                        echo "abc" | sudo -S ./aws/install --update
-                        aws --version
-                    '''
+        stage('Install_AWS_CLI') {
+            steps {
+                sh '''
+                    set -e
+                    echo "Installing AWS CLI..."
+                    echo "abc" | sudo -S apt update && sudo -S apt install -y unzip curl
+                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                    rm -rf aws
+                    unzip -q awscliv2.zip
+                    echo "abc" | sudo -S ./aws/install --update
+                    aws --version
+                '''
             }
         }
-        
-          stage('Configure AWS Credentials'){
-            steps{
-                script{
-                    withCredentials([string(credentialsId: 'AWS_Access_Token', variable: 'Access Key ID'),
-                        string(credentialsId: 'AWS_Secret', variable: 'Secret Access Key')]){
-                                                   sh '''
-                        mkdir -p ~/.aws
-                        echo "[default]" | sudo tee ~/.aws/credentials > /dev/null
-                        echo "aws_access_key_id=\${Access Key ID}"
-                        echo "aws_secret_access_key=\${Secret Access Key}"
-                            echo "aws_access_key_id=\${Access Key ID}" | sudo tee -a ~/.aws/credentials > /dev/null
-                            echo "aws_secret_access_key=\${Secret Access Key}" | sudo tee -a ~/.aws/credentials > /dev/null
-                            
-                            # Set correct permissions for the credentials file (only owner can read/write)
-                            sudo chmod 600 ~/.aws/credentials
-                            
-                            echo "AWS credentials file created and secured."
-                            ''' 
-                        }
+
+        stage('Configure AWS Credentials') {
+            steps {
+                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                    sh 'aws sts get-caller-identity'
                 }
             }
         }
-        
+
         stage('Checkout') {
             steps {
                 echo "Cloning repo...."
-               // checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'GitTokenAdd', url: 'https://github.com/16BitPixel/GeminiApp.git']])
                 git url: "${GIT_REPO}", branch: 'main'
             }
         }
@@ -80,7 +62,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                   //def warFile = "target/*.war"
                     echo "Deploying application to Tomcat. URL: ${TOMCAT_URL}, Path: ${TOMCAT_PATH}"
                     sh ''' pwd '''
                     sh ''' whoami '''
@@ -89,12 +70,12 @@ pipeline {
                         path: '',
                         url: TOMCAT_URL
                     )],
-                     war: 'target/JtProject.war'
+                    war: 'target/JtProject.war'
                 }
             }
         }
-        
-          stage('Build_Docker_Image') {
+
+        stage('Build_Docker_Image') {
             steps {
                 script {
                     sh 'whoami'
@@ -105,45 +86,37 @@ pipeline {
                 }
             }
         }
-        
-           stage('Login to AWS ECR'){
-             steps {
-                script {
-                      withCredentials([
-                        string(credentialsId: 'AWS_Access_Token', variable: 'Access Key ID'),
-                        string(credentialsId: 'AWS_Secret', variable: 'Secret Access Key')
-                    ]){
-                    
+
+        stage('Login to AWS ECR') {
+            steps {
+                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
                     sh '''
                         echo "Logging into AWS ECR..."
-                        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/g5s3z7y8
+                        aws ecr-public get-login-password --region us-east-1 \
+                          | docker login --username AWS --password-stdin public.ecr.aws/g5s3z7y8
                     '''
                 }
             }
+        }
 
-        }
-    }
-        
-         stage('Push Docker Image to ECR') {
+        stage('Push Docker Image to ECR') {
             steps {
-                script {
-                    sh '''
-                        echo "Pushing Docker image to ECR..."
-                        docker push ${IMAGE_URI}
-                    '''
-                }
+                sh '''
+                    echo "Pushing Docker image to ECR..."
+                    docker push ${IMAGE_URI}
+                '''
             }
         }
     }
-    
-     post{
-        always{
+
+    post {
+        always {
             echo "Job finished running"
         }
-        success{
+        success {
             echo "job succeeded"
         }
-        failure{
+        failure {
             echo "job failed"
         }
     }
