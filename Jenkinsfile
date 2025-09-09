@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        GIT_REPO = 'https://github.com/Nandan365/Devops/edit/main/Jenkinsfile'
+        GIT_REPO = 'https://github.com/Nandan365/Devops.git'
         // Add environment variables for Tomcat credentials and URL
         TOMCAT_CREDENTIALS = 'tomcat-manager-creds'
         TOMCAT_URL = 'http://localhost:8080' // Change this to your Tomcat server's URL and port
