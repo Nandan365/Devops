@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'Agent' }
+    agent any
 
     environment {
         GIT_REPO = 'https://github.com/Nandan365/GeminiApp.git'
