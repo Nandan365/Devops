@@ -1,9 +1,5 @@
 pipeline {
-    agent {
-        node {
-            label 'Agent'
-        }
-    }
+    agent { label 'Agent' }
 
     environment {
         GIT_REPO = 'https://github.com/Nandan365/GeminiApp.git'
@@ -17,29 +13,6 @@ pipeline {
     }
 
     stages {
-        stage('Install_AWS_CLI') {
-            steps {
-                sh '''
-                    set -e
-                    echo "Installing AWS CLI..."
-                    echo "abc" | sudo -S apt update && sudo -S apt install -y unzip curl
-                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                    rm -rf aws
-                    unzip -q awscliv2.zip
-                    echo "abc" | sudo -S ./aws/install --update
-                    aws --version
-                '''
-            }
-        }
-
-        stage('Configure AWS Credentials') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                    sh 'aws sts get-caller-identity'
-                }
-            }
-        }
-
         stage('Checkout') {
             steps {
                 echo "Cloning repo...."
@@ -54,7 +27,6 @@ pipeline {
             }
             post {
                 always {
-                    // ✅ Prevents pipeline failure if no test reports are found
                     junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
                 }
             }
@@ -63,12 +35,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo "Deploying application to Tomcat. URL: ${TOMCAT_URL}, Path: ${TOMCAT_PATH}"
-                    sh 'pwd'
-                    sh 'whoami'
+                    echo "Deploying application to Tomcat..."
                     deploy adapters: [tomcat9(
                         credentialsId: TOMCAT_CREDENTIALS,
-                        path: '',
+                        path: '/',
                         url: TOMCAT_URL
                     )],
                     war: 'target/JtProject.war'
@@ -76,15 +46,12 @@ pipeline {
             }
         }
 
-        stage('Build_Docker_Image') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    sh 'whoami'
-                    sh '''
-                        echo "Building Docker image..."
-                        docker build -t ${IMAGE_URI} .
-                    '''
-                }
+                sh '''
+                    echo "Building Docker image..."
+                    docker build -t ${IMAGE_URI} .
+                '''
             }
         }
 
@@ -102,10 +69,7 @@ pipeline {
 
         stage('Push Docker Image to ECR') {
             steps {
-                sh '''
-                    echo "Pushing Docker image to ECR..."
-                    docker push ${IMAGE_URI}
-                '''
+                sh 'docker push ${IMAGE_URI}'
             }
         }
     }
