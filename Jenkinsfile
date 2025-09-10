@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        GIT_REPO = 'https://github.com/Nandan365/Devops.git'
+        GIT_REPO = 'https://github.com/Nandan365/GeminiApp.git'
         TOMCAT_CREDENTIALS = 'tomcat-manager-creds'
         TOMCAT_URL = 'http://localhost:8080'
         TOMCAT_PATH = '/usr/share/apache-tomcat'
